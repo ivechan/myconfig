@@ -1,0 +1,83 @@
+"Syntastic
+
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 0
+let g:syntastic_check_on_wq = 1
+let g:syntastic_quiet_messages = { "type": "style" }
+let g:syntastic_python_checkers = ['flake8']
+
+
+
+"
+" NERDTree
+"let g:nerdtree_tabs_open_on_console_startup = 1
+
+
+function! NERDTreeHighlightFile(extension, fg, bg, guifg, guibg)
+     exec 'autocmd filetype nerdtree highlight ' . a:extension .' ctermbg='. a:bg .' ctermfg='. a:fg .' guibg='. a:guibg .' guifg='. a:guifg
+      exec 'autocmd filetype nerdtree syn match ' . a:extension .' #^\s\+.*'. a:extension .'$#'
+endfunction
+  
+  call NERDTreeHighlightFile('jade', 'green', 'none', 'green', '#151515')
+  call NERDTreeHighlightFile('ini', 'yellow', 'none', 'yellow', '#151515')
+  call NERDTreeHighlightFile('md', 'blue', 'none', '#3366FF', '#151515')
+  call NERDTreeHighlightFile('yml', 'yellow', 'none', 'yellow', '#151515')
+  call NERDTreeHighlightFile('config', 'yellow', 'none', 'yellow', '#151515')
+  call NERDTreeHighlightFile('conf', 'yellow', 'none', 'yellow', '#151515')
+  call NERDTreeHighlightFile('json', 'yellow', 'none', 'yellow', '#151515')
+  call NERDTreeHighlightFile('html', 'yellow', 'none', 'yellow', '#151515')
+  call NERDTreeHighlightFile('styl', 'cyan', 'none', 'cyan', '#151515')
+  call NERDTreeHighlightFile('css', 'cyan', 'none', 'cyan', '#151515')
+  call NERDTreeHighlightFile('coffee', 'Red', 'none', 'red', '#151515')
+  call NERDTreeHighlightFile('js', 'Red', 'none', '#ffa500', '#151515')
+  call NERDTreeHighlightFile('php', 'Magenta', 'none', '#ff00ff', '#151515')
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
+" airline
+let g:airline_theme="wombat" 
+"let g:airline#extensions#tabline#enabled = 1
+let g:airline_powerline_fonts = 1                                                    
+let g:ycm_python_binary_path = '/usr/bin/python3'
+let g:ycm_server_keep_logfiles = 1
+let g:ycm_server_log_level = 'debug'
+
+
+" youcompleteme and snips
+
+"let g:UltiSnipsExpandTrigger="<tab>"
+"let g:UltiSnipsJumpForwardTrigger="<tab>"
+"let g:UltiSnipsJumpBackwardTrigger="<s-tab>"
+
+let g:ycm_key_list_select_completion = ["<c-n>", "down"]
+let g:ycm_key_list_previous_completion = ["<c-p>", "up"]
+let g:SuperTabDefaultCompletionType = "<c-n>"
+
+"let g:ycm_key_invoke_completion = '<TAB>'
+
+" tagbar width
+
+let g:tagbar_width=30
+map <F8> :TagbarToggle<CR>
+
+map <C-n> :NERDTreeToggle<CR>
+
+" parentheses color
+au VimEnter * RainbowParentheses
+
+let g:rainbow#max_level = 16
+let g:rainbow#pairs = [['(', ')'], ['[', ']']]
+
+" List of colors that you do not want. ANSI code or #RRGGBB
+let g:rainbow#blacklist = [233, 234]
+let g:ctrlp_custom_ignore = {
+  \ 'dir':  '\v[\/]\.(git|hg|svn)$',
+  \ 'file': '\v\.(exe|so|dll|png|jpg|)$',
+  \ 'link': 'some_bad_symbolic_links',
+  \ }
+
+noremap <F3> :Autoformat<CR>
