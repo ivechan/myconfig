@@ -3,7 +3,7 @@ call plug#begin('~/vimplug/plugged')
 Plug 'scrooloose/nerdtree',  { 'on': ['NERDTreeToggle', 'NERDTreeFind' ]}
 "Plug 'Xuyuanp/nerdtree-git-plugin'
 "Plug 'jistr/vim-nerdtree-tabs'
-Plug 'ryanoasis/vim-devicons'                              " 使用 NERD 字体让 vim 能显示图标
+" Plug 'ryanoasis/vim-devicons'                              " 使用 NERD 字体让 vim 能显示图标
 Plug 'tpope/vim-surround'                                  " 更方便地使用括号，引号等成对出现的符号
 Plug 'easymotion/vim-easymotion'                           " easymotion
 Plug 'tpope/vim-fugitive'
@@ -15,12 +15,15 @@ Plug 'kana/vim-textobj-entire'
 Plug 'kana/vim-textobj-indent'
 Plug 'Yggdroot/indentLine'
 Plug 'Yggdroot/LeaderF'
+Plug 'tamago324/LeaderF-filer'
 Plug 'jiangmiao/auto-pairs'
 Plug 'adriaanzon/vim-textobj-matchit'
 Plug 'rakr/vim-one'
 " Plug 'tpope/vim-sleuth'
 Plug 'liuchengxu/vista.vim'
 Plug 'cocopon/iceberg.vim'
+Plug 'chriskempson/base16-vim'
+
 Plug 'arcticicestudio/nord-vim'
 Plug 'lucapette/vim-textobj-underscore'
 " Plug 'vimtaku/vim-textobj-keyvalue'
@@ -45,7 +48,10 @@ Plug 'ivechan/molokai'                                      " monokai 配色
 " Plug 'airblade/vim-rooter'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
+Plug 'jesseleite/vim-agriculture'
+
 " Plug 'google/vim-maktaba'
+"
 " Plug 'google/vim-codefmt'
 " Plug 'google/vim-glaive'
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
@@ -76,6 +82,7 @@ filetype plugin indent on
 packadd! matchit
 set nocompatible
 set foldmethod=marker
+set includeexpr=printf('include/%s',v:fname)
 " {{{ 外观
 let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum" " true color and colorscheme UI and font
 let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum" " true color and colorscheme UI and font
@@ -100,7 +107,8 @@ let g:PaperColor_Theme_Options = {
   \     }
   \   }
   \ }
-colorscheme nord            " 最好的颜色方案
+" colorscheme nord            " 最好的颜色方案
+colorscheme base16-helios            " 最好的颜色方案
 "}}}
 
 " {{{  Minimal Setting
@@ -235,7 +243,7 @@ endif
 "}}}
 
 " {{{Leaderf
-
+let g:Lf_UseVersionControlTool = 0
 let g:Lf_HideHelp = 1
 let g:Lf_UseCache = 0
 let g:Lf_PreviewResult = {
@@ -333,6 +341,8 @@ let g:Lf_PopupPalette = {
     \        },
     \      }
     \  }
+nnoremap <leader>fe :Leaderf filer --popup<CR>
+nnoremap <leader>ft :Leaderf vimtag<space>
 nnoremap <leader>ff :Leaderf file --popup<CR>
 nnoremap <leader>f :Leaderf file --popup<CR>
 nnoremap <leader>l :Leaderf line --popup<CR>
@@ -346,6 +356,22 @@ nnoremap <leader>gs :Gstatus<CR>
 nnoremap <leader>gc :Gcommit<Space>
 nnoremap <Leader>a :Leaderf rg<Space>
 nnoremap <M-m> :Leaderf mru --popup<CR>
+function! Get_digest(line, mode)
+    return [a:line, 0]
+    " full path, i.e, the whole line
+    let s:templist = matchlist(a:line, '\(/.*/\)\ \ \(.*\)')
+    let s:jumpcmd = s:templist[1]
+    let s:filename = s:templist[2]
+    return [s:filename, len(a:line) - len(s:filename)]
+endfunction
+let g:Lf_Extensions = {
+            \ "vimtag": {
+            \       "source": string(function("s:vimtags_sources"))[10:-3],
+            \       "arguments": [{ "name": ["tag_pattern"], "nargs": '?' }],
+            \       "accept": string(function("s:vimtags_sink"))[10:-3],
+            \       "get_digest": "Get_digest",
+            \ },
+            \}
 "}}}
 
 " {{{ Fzf setting
@@ -518,12 +544,12 @@ endif
 "}}}
 
 " {{{lightline configuration
+      " \   'filetype': 'MyFiletype',
+      " \   'fileformat': 'MyFileformat',
 let g:lightline = {
-      \ 'colorscheme': 'nord',
+      \ 'colorscheme': 'seoul256',
       \ 'component_function': {
       \   'gitbranch': 'fugitive#head',
-      \   'filetype': 'MyFiletype',
-      \   'fileformat': 'MyFileformat',
       \ },
       \ 'component': {
       \  'tagbar': '%{tagbar#currenttag("%s", "", "f")}',
@@ -569,7 +595,7 @@ function! Lightline_Tab_Absolutepath(n) abort
   let buflist = tabpagebuflist(a:n)
   let winnr = tabpagewinnr(a:n)
   let _ = expand('#'.buflist[winnr - 1])
-  return _ !=# '' ? _ . ' ' .WebDevIconsGetFileTypeSymbol(): '[No Name]'
+  return _ !=# '' ? _ : '[No Name]'
 endfunction
 let g:lightline.tab_component_function = {
         \ 'filename': 'lightline#tab#filename',
@@ -872,7 +898,11 @@ autocmd BufEnter * call SetProjectRoot()
 
 "{{{ Fuzzy Tag Jump with fzf.vim
 function! s:vimtags_sources(args)
-    let s:tag_pattern = "^" . expand('<cword>') . "$"
+    if has_key(a:args, 'tag_pattern')
+        let s:tag_pattern = "^" . a:args['tag_pattern'][0] . "$"
+    else
+        let s:tag_pattern = "^" . expand('<cword>') . "$"
+    endif
     let s:tag_list = taglist(s:tag_pattern)
     " call map(s:tag_list, 'v:val["name"] . "  " . v:val["kind"] . "  " . v:val["filename"]')
     call map(s:tag_list, 'v:val["cmd"] . "  " . v:val["filename"]')
@@ -906,18 +936,50 @@ command! VimTags call s:vimtags()
 nnoremap g] :Leaderf vimtag<CR>
 tnoremap <expr> <Esc> (&filetype == "fzf") ? "<Esc>" : "<c-\><c-n>"
 "}}}
-function! Get_digest(line, mode)
-    return [a:line, 0]
-    " full path, i.e, the whole line
-    let s:templist = matchlist(a:line, '\(/.*/\)\ \ \(.*\)')
-    let s:jumpcmd = s:templist[1]
-    let s:filename = s:templist[2]
-    return [s:filename, len(a:line) - len(s:filename)]
-endfunction
-let g:Lf_Extensions = {
-            \ "vimtag": {
-            \       "source": string(function("s:vimtags_sources"))[10:-3],
-            \       "accept": string(function("s:vimtags_sink"))[10:-3],
-            \       "get_digest": "Get_digest",
-            \ },
-            \}
+
+" Alt keys stuff {{{
+function! Terminal_MetaMode(mode)
+    set ttimeout
+    if $TMUX != ''
+        set ttimeoutlen=30
+    elseif &ttimeoutlen > 80 || &ttimeoutlen <= 0
+        set ttimeoutlen=80
+    endif
+    if has('nvim') || has('gui_running')
+        return
+    endif
+    function! s:metacode(mode, key)
+        if a:mode == 0
+            exec "set <M-".a:key.">=\e".a:key
+        else
+            exec "set <M-".a:key.">=\e]{0}".a:key."~"
+        endif
+    endfunc
+    for i in range(10)
+        call s:metacode(a:mode, nr2char(char2nr('0') + i))
+    endfor
+    for i in range(26)
+        call s:metacode(a:mode, nr2char(char2nr('a') + i))
+        call s:metacode(a:mode, nr2char(char2nr('A') + i))
+    endfor
+    if a:mode != 0
+        for c in [',', '.', '/', ';', '[', ']', '{', '}']
+            call s:metacode(a:mode, c)
+        endfor
+        for c in ['?', ':', '-', '_']
+            call s:metacode(a:mode, c)
+        endfor
+    else
+        for c in [',', '.', '/', ';', '{', '}']
+            call s:metacode(a:mode, c)
+        endfor
+        for c in ['?', ':', '-', '_']
+            call s:metacode(a:mode, c)
+        endfor
+    endif
+endfunc
+call Terminal_MetaMode(0)
+
+let &t_TI="" " disable modifyOtherKeys, use ESC mode to send alt keys.
+let &t_LE=""
+" }}}
